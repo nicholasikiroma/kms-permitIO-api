@@ -1,19 +1,29 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.exceptions import HTTPException
 
-from .utils.auth import verify_token_blacklist
-from .database import engine
-from .api import (
-    authRouter,
-    userRouter,
+from .utils import (
+    verify_token_blacklist,
+    http_exception_handler,
+    server_exception_handler,
+    validation_exception_handler,
 )
+from .database import engine
+from .api import authRouter, userRouter, articlesRouter
 from . import models
 
 models.Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
+
+# register exception handlers
+app.add_exception_handler(Exception, server_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
+
 
 # Set up CORS
 app.add_middleware(
@@ -32,6 +42,7 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=verify_token_blacklist)
 # register api modules
 app.include_router(authRouter)
 app.include_router(userRouter)
+app.include_router(articlesRouter)
 
 
 @app.get("/")

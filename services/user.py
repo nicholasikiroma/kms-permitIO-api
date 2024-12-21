@@ -19,22 +19,29 @@ class UserService:
     def create_user(db: Session, user: UserCreate) -> Users:
         """Static method to create a new user in the database."""
         hashed_password = get_password_hash(user.password)
-        db_user = Users(email=user.email, hashed_password=hashed_password)
-
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-
-        return db_user
+        new_user = Users(
+            email=user.email,
+            hashed_password=hashed_password,
+            active_workspace=user.tenant_id,
+            workspaces=[user.tenant_id],
+        )
+        new_user.add(db)
+        new_user.save(db)
+        return new_user
 
     @staticmethod
-    def get_user_by_id(db: Session, id: int) -> Users:
-        return db.query(Users).filter(Users.id == id).first()
+    def get_user_by_id(db: Session, id: str, tenant_id: str) -> Users:
+        user = Users.get_by_id(db, id, tenant_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+            )
+        return user
 
     @staticmethod
     def get_user_by_email(db: Session, email: str) -> Users:
         """Fetch a user by email."""
-        return db.query(Users).filter(Users.email == email).first()
+        return Users.filter_by(db, email=email)
 
     @staticmethod
     def authenticate_user(db: Session, email: str, password: str) -> Users:
@@ -58,13 +65,12 @@ class UserService:
         return user
 
     @staticmethod
-    def update_user_password(db: Session, password: str, id: int) -> Users:
+    def update_user_password(
+        db: Session, password: str, id: str, tenant_id: str
+    ) -> Users:
         hashed_password = get_password_hash(password)
-        user = UserService.get_user_by_id(db=db, id=id)
-        user.hashed_password = hashed_password
-
-        db.add(user)
-        db.commit()
+        user = UserService.get_user_by_id(db, id, tenant_id)
+        user.update(db, password_hash=hashed_password)
         return user
 
 

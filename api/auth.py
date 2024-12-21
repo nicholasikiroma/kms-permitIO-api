@@ -15,25 +15,9 @@ from ..utils.auth import (
 from ..schemas.users import LoginSchema, RegisterSchema, UserCreate, UserSchema
 from ..schemas.auth_token import RefreshTokenResponse
 from ..utils.session import get_db
-from ..schemas.response import StandardResponse
-from .. import settings
+from ..schemas import StandardResponse
 
 authRouter = APIRouter(prefix="/auth", tags=["Auth"])
-
-
-@authRouter.post("/email-check", response_model=StandardResponse[dict])
-def check_existing_user(email: str, db: Session = Depends(get_db)):
-    """
-    Endpoint to check if a user with the given email already exists
-    """
-    existing_user = UserService.get_user_by_email(db, email)
-    user_exists = bool(existing_user)
-
-    return {
-        "data": {"user_exists": user_exists},
-        "message": "User exists check completed",
-        "status_code": status.HTTP_200_OK,
-    }
 
 
 @authRouter.post("/register", response_model=StandardResponse[RegisterSchema])
@@ -44,14 +28,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = UserService.get_user_by_email(db, user.email)
 
     if existing_user:
-        # Return standard error response if user exists
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "data": {},
-                "message": "Email already registered",
-                "status_code": status.HTTP_400_BAD_REQUEST,
-            },
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already exists.",
         )
 
     # Create the new user
@@ -81,11 +60,7 @@ async def login_user(
     if not user:
         raise HTTPException(
             status_code=401,
-            detail={
-                "data": {},
-                "message": "Incorrect username or password",
-                "status_code": 401,
-            },
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

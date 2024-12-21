@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int
     algorithm: str
     permit_api_key: str
+    permit_pdp: str
     env: str
 
     class Config:

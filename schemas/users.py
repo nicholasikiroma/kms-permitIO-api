@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from fastapi import UploadFile
 from pydantic import BaseModel
 from datetime import datetime
@@ -12,22 +12,22 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    tenant_id: str
 
 
 class UserProfileUpdate(BaseModel):
-    first_name: Optional[str]
-    last_name: Optional[str]
+    name: Optional[str]
     avatar: Optional[UploadFile]
 
 
 class UserSchema(UserBase):
-    id: int
+    id: str
+    workspaces: List[str]
+    active_workspace: str
     is_active: bool
     created_at: datetime
-    is_admin: Optional[bool]
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    avatar_url: Optional[str] = None
+    updated_at: datetime
+    name: Optional[str] = None
 
 
 class LoginSchema(BaseModel):
