@@ -1,11 +1,18 @@
-from sqlalchemy import Boolean, Column, String, DateTime, func, ForeignKey, Enum, ARRAY
+from sqlalchemy import Boolean, Column, String, ForeignKey, Enum, ARRAY, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
-from uuid import uuid4
 from enum import Enum as PyEnum
 
-from ..models.tenants import Tenants  # Assuming tenants are still in use
 from .base import BaseModel
+
+
+# Association Table (Many-to-Many)
+user_tenants = Table(
+    "user_tenants",
+    BaseModel.metadata,
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True),
+    Column("tenant_id", UUID(as_uuid=True), ForeignKey("tenants.id"), primary_key=True),
+)
 
 
 class UserRoles(PyEnum):
@@ -20,7 +27,6 @@ class Users(BaseModel):
     workspaces = Column(ARRAY(UUID(as_uuid=True)), nullable=False)
     active_workspace = Column(
         UUID(as_uuid=True),
-        ForeignKey(Tenants.id),
         nullable=False,
     )
     email = Column(String, unique=True, index=True)
@@ -31,8 +37,11 @@ class Users(BaseModel):
 
     # Relationships
     knowledge_articles = relationship(
-        "KnowledgeArticles", back_populates="author", cascade="all, delete-orphan"
+        "KnowledgeArticles",
+        back_populates="author",
     )
+
+    tenants = relationship("Tenants", secondary="user_tenants", back_populates="users")
 
     # Utility Methods
     def set_active_workspace(self, workspace_id):

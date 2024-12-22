@@ -4,3 +4,4 @@ from .knowledge_articles import (
     ArticleCreateResponseSchema,
 )
 from .response import StandardResponse
+from .tenants import TenantCreateSchema, TenantUpdateSchema, TenantSchema

@@ -21,7 +21,7 @@ class ArticleUpdateSchema(BaseModel):
 
 
 class ArticleCreateResponseSchema(BaseModel):
-    id: uuid4
+    id: str
     title: str
     tenant_id: str
     author_id: str

@@ -1,7 +1,15 @@
 from typing import Optional
 from fastapi import HTTPException, status
 from fastapi.logger import logger
-from permit import Permit, TenantRead, UserRead, RoleAssignmentRead, PermitApiError
+from permit import (
+    Permit,
+    TenantRead,
+    UserRead,
+    RoleAssignmentRead,
+    PermitApiError,
+    RoleAssignmentCreate,
+    UserCreate,
+)
 from enum import Enum
 
 from .. import settings
@@ -20,36 +28,29 @@ class Actions(Enum):
     DELETE = "delete"
     PUBLISH = "publish"
     READ = "read"
+    ASSIGN_ROLE = "assign_role"
 
 
-async def create_permit_user(user_id: str, tenant_id: str, role):
+async def create_permit_user(user_id: str, tenant_id: str, role: str):
     """Create a user"""
     try:
 
-        new_user: UserRead = await permit.write(
-            permit_client.sync_user(
-                {"key": user_id, "tenant_id": tenant_id, "role": role}
-            ),
-            permit_client.assign_role(user_id, role, tenant_id),
-        )
+        new_user: UserRead = await permit_client.users.sync({"key": user_id})
+        await permit_client.users.assign_role(
+            {"user": user_id, "role": role, "tenant": tenant_id}
+        ),
 
     except PermitApiError as e:
         logger.error(msg=e, stack_info=True)
         if e.status_code == 409:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail={
-                    "status": "fail",
-                    "data": {"key": "A user with this key already exists"},
-                },
+                detail="A user with this key already exists",
             )
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "status": "error",
-                "message": "Unable to create user or permission",
-            },
+            status_code=e.status_code,
+            detail=e.message,
         )
 
     return new_user
@@ -82,8 +83,8 @@ async def check_user_permission(
     except PermitApiError as e:
         logger.error(f"Permission check failed for user {user_id}", exc_info=e)
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"status": "error", "message": "Permission check failed"},
+            status_code=e.status_code,
+            detail=e.message,
         )
 
 
@@ -98,11 +99,8 @@ async def create_tenant(name: str, tenant_id: str, description: Optional[str]):
     except PermitApiError as e:
         logger.error(msg=e, stack_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "status": "error",
-                "message": "Unable to create tenant",
-            },
+            status_code=e.status_code,
+            detail=e.message,
         )
 
 
@@ -118,8 +116,5 @@ async def update_user_role(user_id: str, tenant_id: str, role: str):
         logger.error(msg=e, stack_info=True)
         raise HTTPException(
             status_code=e.status_code,
-            detail={
-                "status": "error",
-                "message": e.message,
-            },
+            detail=e.message,
         )

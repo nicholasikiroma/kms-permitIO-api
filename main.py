@@ -12,9 +12,9 @@ from .utils import (
 )
 from .database import engine
 from .api import authRouter, userRouter, articlesRouter
-from . import models
+from .models.base import Base
 
-models.Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()

@@ -18,7 +18,7 @@ class ArticleService:
             content=article.content,
             tags=article.tags,
         )
-        new_article.add(db)
+        new_article.add(new_article, db)
         new_article.save(db)
 
         return new_article

@@ -1,12 +1,9 @@
-from sqlalchemy import Column, String, DateTime, func, ForeignKey, Text, Enum
+from sqlalchemy import Column, String, ForeignKey, Text, Enum
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
-from uuid import uuid4
 from enum import Enum as PyEnum
 
-from ..models.tenants import Tenants
-from ..models.users import Users
-from .base import Base, BaseModel
+from .base import BaseModel
 
 
 class ArticleStatus(PyEnum):
@@ -17,8 +14,8 @@ class ArticleStatus(PyEnum):
 class KnowledgeArticles(BaseModel):
     __tablename__ = "knowledge_articles"
 
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey(Tenants.id), nullable=False)
-    author_id = Column(UUID(as_uuid=True), ForeignKey(Users.id), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
+    author_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     title = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     tags = Column(ARRAY(String), nullable=True)

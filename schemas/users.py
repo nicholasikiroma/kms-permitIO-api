@@ -1,8 +1,10 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 from fastapi import UploadFile
 from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
 
+from ..models import UserRoles
 from ..schemas.auth_token import AuthToken
 
 
@@ -12,7 +14,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    tenant_id: str
+    role: UserRoles
 
 
 class UserProfileUpdate(BaseModel):
@@ -21,13 +23,17 @@ class UserProfileUpdate(BaseModel):
 
 
 class UserSchema(UserBase):
-    id: str
-    workspaces: List[str]
-    active_workspace: str
+    id: UUID
+    workspaces: List[UUID]
+    active_workspace: UUID
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    role: str
     name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 
 class LoginSchema(BaseModel):
@@ -40,4 +46,4 @@ class RegisterSchema(BaseModel):
     tokens: AuthToken
 
     class Config:
-        orm_mode = True
+        from_attributes = True

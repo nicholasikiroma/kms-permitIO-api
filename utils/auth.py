@@ -6,10 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 import jwt
 from jwt.exceptions import PyJWTError
-import secrets
-from sqlalchemy.orm import Session
 
-from ..models.users import Users
 from .. import settings
 
 

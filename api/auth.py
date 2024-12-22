@@ -1,10 +1,10 @@
 from datetime import datetime
-import traceback
-from fastapi import APIRouter, Depends, HTTPException, Response, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from ..services.user import UserService
+from ..services import UserService, TenantService
 from ..utils.auth import (
     create_access_token,
     create_refresh_token,
@@ -21,7 +21,7 @@ authRouter = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @authRouter.post("/register", response_model=StandardResponse[RegisterSchema])
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
+async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     """
     Endpoint to create a new user account if the email doesn't already exist
     """
@@ -33,21 +33,45 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
             detail="User already exists.",
         )
 
+    tenant_data = {
+        "name": "test-0",
+        "description": "Default organisation",
+        "owner": None,
+    }
+    # create tenant
+    new_tenant = await TenantService.create_tenant(db, tenant_data)
+
     # Create the new user
-    new_user = UserService.create_user(db, user)
+    new_user = await UserService.create_user(db, user, new_tenant.id)
+    new_tenant.update(db, owner=new_user.id)
 
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
 
+    user_schema = UserSchema.model_validate(new_user)
+    user_dict = user_schema.model_dump()
+
+    # Convert UUIDs to strings
+    user_dict["id"] = str(user_dict["id"])
+    user_dict["workspaces"] = [
+        str(workspace_id) for workspace_id in user_dict["workspaces"]
+    ]
+    user_dict["active_workspace"] = str(user_dict["active_workspace"])
+
     # Return the newly created user with standard response
-    return {
-        "data": {
-            "user": new_user,
-            "tokens": {"access_token": access_token, "refresh_token": refresh_token},
+    return JSONResponse(
+        {
+            "data": {
+                "user": user_dict,
+                "tokens": {
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                },
+            },
+            "status": "success",
         },
-        "message": "User successfully created",
-        "status_code": status.HTTP_201_CREATED,
-    }
+        status_code=status.HTTP_201_CREATED,
+    )
 
 
 @authRouter.post("/login", response_model=StandardResponse[LoginSchema])

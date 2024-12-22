@@ -1,4 +1,5 @@
 from fastapi import Request, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import ValidationError
@@ -38,15 +39,11 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
 
 
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """Handles HTTP exceptions."""
-    status_code = exc.status_code
-    if status_code == 422:  # Handle validation errors separately
+    if isinstance(exc, RequestValidationError):
+        # Pass only validation errors here
         return await validation_exception_handler(request, exc)
-
+    # Handle general HTTP exceptions
     return JSONResponse(
-        status_code=status_code,
-        content=jsend_response(
-            status="fail",
-            message=exc.detail if exc.detail else "HTTP error occurred",
-        ),
+        status_code=exc.status_code,
+        content=jsend_response(status="fail", data=exc.detail),
     )
