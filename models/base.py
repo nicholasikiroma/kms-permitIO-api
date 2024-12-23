@@ -70,6 +70,11 @@ class BaseModel(Base):
         return session.query(cls).filter_by(**filters).all()
 
     @classmethod
+    def get_one_by(cls: Type[T], session: Session, **filters) -> List[T]:
+        """Filter objects by given conditions."""
+        return session.query(cls).filter_by(**filters).first()
+
+    @classmethod
     def delete_by_id(cls: Type[T], session: Session, obj_id: Any) -> None:
         """Delete an object by its primary key."""
         obj = cls.get_by_id(session, obj_id)
@@ -81,13 +86,7 @@ class BaseModel(Base):
                 session.rollback()
                 raise ex
 
-    def update(self, session: Session, **kwargs) -> None:
+    def update(self, **kwargs) -> None:
         """Update fields of the current object."""
         for key, value in kwargs.items():
             setattr(self, key, value)
-        try:
-            session.commit()
-            session.refresh(self)
-        except Exception as ex:
-            session.rollback()
-            raise ex

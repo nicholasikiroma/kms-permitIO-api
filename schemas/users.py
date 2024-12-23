@@ -1,6 +1,6 @@
-from typing import Optional, List, Union
+from typing import Optional, List
 from fastapi import UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from uuid import UUID
 
@@ -15,6 +15,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     role: UserRoles
+    workspace_id: Optional[str]
 
 
 class UserProfileUpdate(BaseModel):
@@ -32,8 +33,18 @@ class UserSchema(UserBase):
     role: str
     name: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    def model_dump(self, **kwargs):
+        data = super().model_dump(**kwargs)
+        # Convert UUID fields to strings
+        data["id"] = str(data["id"])
+        data["workspaces"] = [str(workspace_id) for workspace_id in data["workspaces"]]
+        data["active_workspace"] = str(data["active_workspace"])
+        # Convert datetime fields
+        data["created_at"] = data["created_at"].isoformat()
+        data["updated_at"] = data["updated_at"].isoformat()
+        return data
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LoginSchema(BaseModel):
@@ -45,5 +56,7 @@ class RegisterSchema(BaseModel):
     user: UserSchema
     tokens: AuthToken
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True,
+        "json_encoders": {UUID: str, datetime: lambda v: v.isoformat()},
+    }

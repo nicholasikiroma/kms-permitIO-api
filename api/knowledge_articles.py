@@ -12,7 +12,7 @@ from ..services import (
 from ..schemas import (
     StandardResponse,
     ArticleCreateSchema,
-    ArticleCreateResponseSchema,
+    ArticleSchema,
     ArticleUpdateSchema,
 )
 from ..models import Users
@@ -21,7 +21,7 @@ from ..utils import session
 articlesRouter = APIRouter(prefix="/knowledge-articles", tags=["Knowledge Articles"])
 
 
-@articlesRouter.post("/", response_model=StandardResponse[ArticleCreateResponseSchema])
+@articlesRouter.post("/", response_model=StandardResponse[ArticleSchema])
 async def create_article(
     article: ArticleCreateSchema,
     db=Depends(session.get_db),
@@ -29,44 +29,51 @@ async def create_article(
 ):
     """Creates a new article resource"""
     permitted = await check_user_permission(
-        user_id=current_user.id,
+        user_id=str(current_user.id),
         action=Actions.CREATE.value,
-        tenant_id=current_user.tenant_id,
+        tenant_id=str(current_user.active_workspace),
     )
     if not permitted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Article not found"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have the right permissions",
         )
 
-    new_article = ArticleService.create_article(db=db, article=article)
+    result = ArticleService.create_article(db=db, article=article)
+
+    new_article = ArticleSchema.model_validate(result)
 
     return JSONResponse(
-        {"data": new_article, "status": "success"}, status_code=status.HTTP_201_CREATED
+        {"data": new_article.model_dump(), "status": "success"},
+        status_code=status.HTTP_201_CREATED,
     )
 
 
-@articlesRouter.get(
-    "/", response_model=StandardResponse[List[ArticleCreateResponseSchema]]
-)
+@articlesRouter.get("/", response_model=StandardResponse[List[ArticleSchema]])
 async def fetch_tenant_articles(
     db=Depends(session.get_db), current_user: Users = Depends(get_current_user_dep)
 ):
     """Fetch all knowledge resources in a tenant"""
     permitted = await check_user_permission(
-        user_id=current_user.id,
+        user_id=str(current_user.id),
         action=Actions.READ.value,
-        tenant_id=current_user.tenant_id,
+        tenant_id=str(current_user.active_workspace),
     )
     if not permitted:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not allowed to view this resources",
         )
-    articles = ArticleService.retrieve_tenant_articles(
-        db=db, tenant_id=current_user.tenant_id
+    data = ArticleService.retrieve_tenant_articles(
+        db=db, tenant_id=str(current_user.active_workspace)
     )
+
+    articles = [ArticleSchema.model_validate(article) for article in data]
+    article_arr = [article.model_dump() for article in articles]
+
     return JSONResponse(
-        {"data": articles, "status": "success"}, status_code=status.HTTP_200_OK
+        {"data": article_arr, "status": "success"},
+        status_code=status.HTTP_200_OK,
     )
 
 
@@ -80,21 +87,32 @@ async def fetch_article_by_id(
 ):
     """Fetch knowledge resource by ID"""
     permitted = await check_user_permission(
-        user_id=current_user.id,
+        user_id=str(
+            current_user.id,
+        ),
         action=Actions.READ.value,
-        tenant_id=current_user.tenant_id,
+        tenant_id=str(current_user.active_workspace),
     )
     if not permitted:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not allowed to view this resources",
+            detail="You are not allowed to view this resource",
         )
 
-    article = ArticleService.get_article_by_id(
-        db=db, tenant_id=current_user.tenant_id, article_id=article_id
+    data = ArticleService.get_article_by_id(
+        db=db, tenant_id=current_user.active_workspace, article_id=article_id
     )
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Article '{article_id}' not found",
+        )
+
+    article = ArticleSchema.model_validate(data)
     return JSONResponse(
-        {"data": article, "status": "success"}, status_code=status.HTTP_200_OK
+        {"data": article.model_dump(), "status": "success"},
+        status_code=status.HTTP_200_OK,
     )
 
 
@@ -109,24 +127,25 @@ async def update_by_id(
 ):
     """Fetch knowledge resource by ID"""
     permitted = await check_user_permission(
-        user_id=current_user.id,
+        user_id=str(current_user.id),
         action=Actions.UPDATE.value,
-        tenant_id=current_user.tenant_id,
+        tenant_id=str(current_user.active_workspace),
     )
     if not permitted:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not allowed to view this resources",
+            detail="You are not allowed to update this resources",
         )
 
-    article = ArticleService.update_article(
+    ArticleService.update_article(
         db=db,
-        tenant_id=current_user.tenant_id,
+        tenant_id=current_user.active_workspace,
         article_id=article_id,
         update_obj=update_obj,
     )
     return JSONResponse(
-        {"data": article, "status": "success"}, status_code=status.HTTP_200_OK
+        {"data": None, "status": "success"},
+        status_code=status.HTTP_200_OK,
     )
 
 
@@ -140,9 +159,9 @@ async def delete_by_id(
 ):
     """Fetch knowledge resource by ID"""
     permitted = await check_user_permission(
-        user_id=current_user.id,
+        user_id=str(current_user.id),
         action=Actions.DELETE.value,
-        tenant_id=current_user.tenant_id,
+        tenant_id=str(current_user.active_workspace),
     )
     if not permitted:
         raise HTTPException(
@@ -150,11 +169,13 @@ async def delete_by_id(
             detail="You are not allowed to view this resources",
         )
 
-    article = ArticleService.delete_article(
+    ArticleService.delete_article(
         db=db,
-        tenant_id=current_user.tenant_id,
+        tenant_id=current_user.active_workspace,
         article_id=article_id,
     )
+
     return JSONResponse(
-        {"data": article, "status": "success"}, status_code=status.HTTP_200_OK
+        {"data": None, "status": "success"},
+        status_code=status.HTTP_200_OK,
     )

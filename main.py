@@ -11,7 +11,7 @@ from .utils import (
     validation_exception_handler,
 )
 from .database import engine
-from .api import authRouter, userRouter, articlesRouter
+from .api import authRouter, articlesRouter
 from .models.base import Base
 
 Base.metadata.create_all(bind=engine)
@@ -41,7 +41,6 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=verify_token_blacklist)
 
 # register api modules
 app.include_router(authRouter)
-app.include_router(userRouter)
 app.include_router(articlesRouter)
 
 

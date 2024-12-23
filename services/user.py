@@ -49,13 +49,13 @@ class UserService:
     @staticmethod
     def get_user_by_email(db: Session, email: str) -> Users:
         """Fetch a user by email."""
-        return Users.filter_by(db, email=email)
+        return Users.get_one_by(db, email=email)
 
     @staticmethod
     def authenticate_user(db: Session, email: str, password: str) -> Users:
         """Authenticate a user by email and password."""
         user = UserService.get_user_by_email(db, email)
-        if not user or not verify_password(password, user.hashed_password):
+        if not user or not verify_password(password, user.password_hash):
             return None
         return user
 

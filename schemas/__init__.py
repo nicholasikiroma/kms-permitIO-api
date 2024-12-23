@@ -1,7 +1,7 @@
 from .knowledge_articles import (
     ArticleCreateSchema,
     ArticleUpdateSchema,
-    ArticleCreateResponseSchema,
+    ArticleSchema,
 )
 from .response import StandardResponse
 from .tenants import TenantCreateSchema, TenantUpdateSchema, TenantSchema

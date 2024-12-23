@@ -49,20 +49,11 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     refresh_token = create_refresh_token(data={"sub": user.email})
 
     user_schema = UserSchema.model_validate(new_user)
-    user_dict = user_schema.model_dump()
 
-    # Convert UUIDs to strings
-    user_dict["id"] = str(user_dict["id"])
-    user_dict["workspaces"] = [
-        str(workspace_id) for workspace_id in user_dict["workspaces"]
-    ]
-    user_dict["active_workspace"] = str(user_dict["active_workspace"])
-
-    # Return the newly created user with standard response
     return JSONResponse(
         {
             "data": {
-                "user": user_dict,
+                "user": user_schema.model_dump(),
                 "tokens": {
                     "access_token": access_token,
                     "refresh_token": refresh_token,
@@ -87,18 +78,24 @@ async def login_user(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    user_schema = UserSchema.model_validate(user)
 
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
 
-    return {
-        "data": {
-            "user": user,
-            "tokens": {"access_token": access_token, "refresh_token": refresh_token},
+    return JSONResponse(
+        content={
+            "data": {
+                "user": user_schema.model_dump(),
+                "tokens": {
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                },
+                "status": "success",
+            }
         },
-        "message": "Login successful",
-        "status_code": status.HTTP_200_OK,
-    }
+        status_code=status.HTTP_200_OK,
+    )
 
 
 @authRouter.get("/refresh", response_model=StandardResponse[RefreshTokenResponse])
@@ -131,8 +128,6 @@ async def logout(token: str = Depends(oauth2_scheme)):
     Revoke the token by blacklisting it.
     """
     blacklisted_tokens[token] = datetime.now()
-    return {
-        "message": "Logged out successfully.",
-        "status_code": status.HTTP_200_OK,
-        "data": {},
-    }
+    return JSONResponse(
+        content={"data": None, "status": "success"}, status_code=status.HTTP_200_OK
+    )
