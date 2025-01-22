@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from ..models import Tenants
-from ..schemas import TenantCreateSchema, TenantUpdateSchema
+from ..schemas import TenantUpdateSchema
 from . import create_tenant as create_permitio_tenant
 
 

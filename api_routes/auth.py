@@ -1,11 +1,12 @@
 from datetime import datetime
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from ..services import UserService, TenantService
-from ..utils.auth import (
+from ..utils.auth_utils import (
     create_access_token,
     create_refresh_token,
     verify_access_token,
@@ -34,7 +35,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
         )
 
     tenant_data = {
-        "name": "test-0",
+        "name": f"Default-{uuid.uuid4()}",
         "description": "Default organisation",
         "owner": None,
     }
@@ -43,7 +44,8 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
     # Create the new user
     new_user = await UserService.create_user(db, user, new_tenant.id)
-    new_tenant.update(db, owner=new_user.id)
+    new_tenant.update(owner=new_user.id)
+    new_tenant.save(db)
 
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
@@ -111,11 +113,14 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     email = verify_access_token(refresh_token, credentials_exception)
     new_access_token = create_access_token(data={"sub": email})
 
-    return {
-        "data": {"access_token": new_access_token},
-        "message": "Token refreshed successfully",
-        "status_code": status.HTTP_200_OK,
-    }
+    return JSONResponse(
+        content={
+            "data": {"access_token": new_access_token},
+            "message": "Token refreshed successfully",
+            "status": "success",
+        },
+        status_code=status.HTTP_200_OK,
+    )
 
 
 @authRouter.post(

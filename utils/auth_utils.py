@@ -74,7 +74,7 @@ async def verify_token_blacklist(request: Request, call_next):
     if token in blacklisted_tokens:
         return JSONResponse(
             status_code=401,
-            content={"message": "Token is revoked.", "status_code": 401, "data": {}},
+            content={"message": "Token is revoked.", "status": "fail", "data": {}},
         )
 
     response = await call_next(request)

@@ -5,5 +5,5 @@ from .permit_service import (
     Actions,
 )
 from .knowledge_articles import ArticleService
-from .user import UserService, get_current_user_dep
+from .users import UserService, get_current_user_dep
 from .tenants import TenantService

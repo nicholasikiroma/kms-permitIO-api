@@ -1,16 +1,14 @@
-from typing import Optional
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from uuid import UUID
 
 from ..utils.session import get_db
 from ..schemas.users import UserCreate
-from ..utils.auth import (
+from ..utils.auth_utils import (
     get_password_hash,
     verify_access_token,
     verify_password,
     oauth2_scheme,
-    optional_oauth2_scheme,
 )
 from ..models.users import Users
 from . import create_permit_user
@@ -87,15 +85,5 @@ def get_current_user_dep(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ):
-
-    return UserService.get_current_user(token, db)
-
-
-def get_current_user_optional(
-    token: Optional[str] = Depends(optional_oauth2_scheme),
-    db: Session = Depends(get_db),
-):
-    if token is None:
-        return None
 
     return UserService.get_current_user(token, db)

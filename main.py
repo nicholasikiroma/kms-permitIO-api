@@ -11,7 +11,7 @@ from .utils import (
     validation_exception_handler,
 )
 from .database import engine
-from .api import authRouter, articlesRouter
+from .api_routes import authRouter, articlesRouter
 from .models.base import Base
 
 Base.metadata.create_all(bind=engine)

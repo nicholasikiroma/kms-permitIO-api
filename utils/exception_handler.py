@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 
 def jsend_response(status: str, message: str = None, data: dict = None):
-    """Helper function to create a JSend-compliant response."""
+    """Helper function to create response."""
     response = {"status": status}
     if message:
         response["message"] = message

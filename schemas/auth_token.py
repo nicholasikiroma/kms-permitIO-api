@@ -12,8 +12,3 @@ class RefreshTokenResponse(BaseModel):
 
 class AuthTokenData(BaseModel):
     username: str | None = None
-
-
-class ResetForgettenPassword(BaseModel):
-    token: str
-    password: str

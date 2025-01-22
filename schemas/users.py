@@ -56,7 +56,7 @@ class RegisterSchema(BaseModel):
     user: UserSchema
     tokens: AuthToken
 
-    model_config = {
-        "from_attributes": True,
-        "json_encoders": {UUID: str, datetime: lambda v: v.isoformat()},
-    }
+    # model_config = {
+    #     "from_attributes": True,
+    #     "json_encoders": {UUID: str, datetime: lambda v: v.isoformat()},
+    # }

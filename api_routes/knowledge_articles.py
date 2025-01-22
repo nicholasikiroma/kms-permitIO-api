@@ -166,7 +166,7 @@ async def delete_by_id(
     if not permitted:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not allowed to view this resources",
+            detail="You are not allowed to delete this resource",
         )
 
     ArticleService.delete_article(

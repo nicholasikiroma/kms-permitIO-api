@@ -7,8 +7,6 @@ from permit import (
     UserRead,
     RoleAssignmentRead,
     PermitApiError,
-    RoleAssignmentCreate,
-    UserCreate,
 )
 from enum import Enum
 
@@ -62,20 +60,7 @@ async def check_user_permission(
     tenant_id: str,
     resource: str = "article",
 ) -> bool:
-    """Checks if user has the right permission to access resource.
-
-    Args:
-        user_id (str): The unique identifier of the user
-        action (str): The action being performed (e.g., "read", "write")
-        tenant_id (str): The tenant identifier
-        resource (str, optional): The resource type. Defaults to "article"
-
-    Returns:
-        bool: True if user has permission, False otherwise
-
-    Raises:
-        HTTPException: If permission check fails
-    """
+    """Checks if user has the right permission to access resource."""
     try:
         return await permit.check(
             {"key": user_id}, action, {"type": resource, "tenant": tenant_id}
